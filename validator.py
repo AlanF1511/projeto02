@@ -46,3 +46,19 @@ def validar_resposta_llm(resposta_texto, categorias_permitidas):
     except Exception as e:
         logging.error(f"Erro inesperado durante a validação: {e}")
         return fallback
+    
+def detectar_prompt_injection(prompt):
+    """
+    Verifica se o prompt contém tentativas de injeção ou manipulação das regras.
+    """
+    termos_bloqueados = [
+        "system prompt", "ignore as instruções", "esqueça as regras",
+        "aja como", "bypass", "instruções anteriores"
+    ]
+    
+    prompt_min = prompt.lower()
+    for termo in termos_bloqueados:
+        if termo in prompt_min:
+            return True # Injeção detectada
+            
+    return False # Prompt seguro
