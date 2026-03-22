@@ -1,43 +1,31 @@
-from rag import iniciar_sistema, buscar_contexto
-from validator import detectar_prompt_injection
-from llm_client import gerar_resposta_llm
-from dotenv import load_dotenv
-load_dotenv()
+from memoria import carregar_historico, limpar_memoria
+from llm_client import enviar_mensagem_com_memoria
 
 def executar_chat():
-    print("--- INICIANDO SISTEMA LOJA VIRTUAL ---")
-    # 1. Carrega o txt e cria a memória vetorial
-    iniciar_sistema('conhecimento/conhecimento.txt')
-    print("-" * 40)
+    print("--- ASSISTENTE COM MEMÓRIA E FERRAMENTAS ---")
+    print("Comandos: /limpar (apaga memória) | sair (encerra)\n")
+    
+    # Parte 5 - Carrega o histórico ao reiniciar
+    mensagens = carregar_historico()
     
     while True:
-        # 2. Recebe a pergunta
-        pergunta = input("\nDigite sua dúvida sobre reembolso (ou 'sair'): ")
-        if pergunta.lower() == 'sair':
+        pergunta = input("Você: ")
+        
+        if pergunta.lower() in ['sair', 'exit']:
             break
-        
-        # 3. Validação de Segurança (Prompt Injection)
-        if detectar_prompt_injection(pergunta):
-            print("❌ Erro de Segurança: Tentativa de manipulação de prompt detectada. Ação bloqueada.")
-            continue # Pula para a próxima iteração do loop
             
-        # 4. Busca o contexto no RAG
-        print("🔍 Buscando na base de conhecimento...")
-        contexto_recuperado = buscar_contexto(pergunta)
+        # Parte 1 - Comando de limpeza
+        if pergunta.lower() == '/limpar':
+            mensagens = limpar_memoria()
+            print("🤖 Assistente: Memória da conversa apagada.\n")
+            continue
+            
+        # Adiciona a pergunta do usuário na lista de mensagens
+        mensagens.append({"role": "user", "content": pergunta})
         
-        # 5. Monta o prompt protegido
-        prompt_final = f"""
-        Você é o assistente de suporte da loja virtual. Responda a pergunta do usuário baseando-se APENAS no contexto fornecido.
-        Se a resposta não estiver no contexto, diga que não tem essa informação.
-        
-        Contexto: {contexto_recuperado}
-        
-        Pergunta: {pergunta}
-        """
-        
-        # 6. Chama o LLM para responder
-        resposta = gerar_resposta_llm(prompt_final)
-        print(f"\n🤖 Assistente: \n{resposta}")
+        # Chama a API
+        resposta = enviar_mensagem_com_memoria(mensagens)
+        print(f"🤖 Assistente: {resposta}\n")
 
 if __name__ == "__main__":
     executar_chat()
